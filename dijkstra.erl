@@ -1,5 +1,5 @@
 -module(dijkstra).
--export([entry/2,table/2]).
+-export([entry/2,table/2,route/2]).
 
 entry(Node,Sorted) ->
     case lists:keyfind(Node,1,Sorted) of
@@ -65,5 +65,10 @@ table(Gateways,Map) ->
     GwList = gateway_entries(Gateways),
     InitialSorted = GwList ++ other_entries(AllNodes,Gateways),
     iterate(InitialSorted,Map,[]).
+
+route(Node,Table) ->
+    case lists:keyfind(Node,1,Table) of
+        {Node, Gateway} -> {ok, Gateway};
+        false -> notfound end.
 
     
