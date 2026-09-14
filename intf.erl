@@ -19,13 +19,13 @@ lookup(Name,Intf) ->
 ref(Name,Intf) ->
     Answer = lists:keyfind(Name,1,Intf),
     case Answer of
-        false -> unknown;
+        false -> notfound;
         {_, Ref, _} -> {ok,Ref} end.
 
 name(Ref,Intf) ->
     Answer = lists:keyfind(Ref,2,Intf),
     case Answer of
-        false -> unknown;
+        false -> notfound;
         {Name, _, _} -> {ok,Name} end.
 
 

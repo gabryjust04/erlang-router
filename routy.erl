@@ -23,7 +23,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             Ref = erlang:monitor(process,Pid),
             Intf1 = intf:add(Node,Ref,Pid,Intf),
             router(Name, N, Hist, Intf1, Table, Map);
-        {remove,Node,Pid} ->
+        {remove,Node} ->
             {ok,Ref} = intf:ref(Node,Intf),
             erlang:demonitor(Ref),
             Intf1 = intf:remove(Node,Intf),
@@ -46,7 +46,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
                 intf:broadcast({links, Node, R, Links}, Intf),
                 Map1 = map:update(Node, Links, Map),
                 router(Name, N, Hist1, Intf, Table, Map1);
-            error ->
+            old ->
                 router(Name, N, Hist, Intf, Table, Map)
                 end;
         update ->
@@ -62,7 +62,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             io:format("~w: received message ~w ~n", [Name, Message]),
             router(Name, N, Hist, Intf, Table, Map);
         {route, To, From, Message} ->
-            io:format("~w: routing message (~w)", [Name, Message]),
+            io:format("~w: routing message (~w)~n", [Name, Message]),
             case dijkstra:route(To, Table) of
                 {ok, Gw} ->
                     case intf:lookup(Gw, Intf) of

@@ -9,7 +9,7 @@ update(Node,N,History) ->
         false ->  {new,[{Node,N} | History]};
         {_, OldN} -> 
             case N>OldN of
-                false-> error;
+                false-> old;
                 true -> Updated = lists:keyreplace(Node,1,History,{Node,N}),
                  {new,Updated}
                  end

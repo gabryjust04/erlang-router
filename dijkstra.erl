@@ -40,7 +40,7 @@ other_entries([X | Rest],Gateways) ->
         true ->
             other_entries(Rest,Gateways);
         false -> 
-            [{X, inf, X}| other_entries(Rest,Gateways)] end.
+            [{X, inf, unknown}| other_entries(Rest,Gateways)] end.
     
 update_neighbors([],N,Gateway,Sorted) ->
     Sorted;
@@ -51,7 +51,7 @@ update_neighbors([Next | Neighbors], N,Gateway,Sorted) ->
 
 iterate([],Map,Table) ->
     Table;
-iterate([_,inf,_| Sorted],Map,Table)->
+iterate([{_,inf,_}| Sorted],Map,Table)->
     Table;
 iterate([{Node,N,Gateway}| Sorted],Map,Table) ->
     Table1 = [{Node,Gateway} | Table],
