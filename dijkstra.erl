@@ -1,74 +1,58 @@
 -module(dijkstra).
--export([entry/2,table/2,route/2]).
+-export([table/2, route/2]).
 
-entry(Node,Sorted) ->
-    case lists:keyfind(Node,1,Sorted) of
-        {_,Hop,_} -> Hop;
-        false -> 0 end.
+entry(Node, Sorted) ->
+    case lists:keyfind(Node, 1, Sorted) of
+        {Node, N, _Gateway} ->
+            N;
+        false ->
+            0
+    end.
 
+replace(Node, N, Gateway, Sorted) ->
+    Rest = lists:keydelete(Node, 1, Sorted),
+    lists:keysort(2, [{Node, N, Gateway} | Rest]).
 
-insert({Node,N,Gateway},[]) ->
-    [{Node,N,Gateway}|[]];
-insert({Node,N,Gateway}, [{C,L,G}| Rest]) when N=<L ->
-    [{Node,N,Gateway},{C,L,G}|Rest];
-insert({Node,N,Gateway}, [{C,L,G}| Rest]) when N>L ->
-    [{C,L,G} | insert({Node,N,Gateway},Rest)].
-
-
-
-
-replace(Node,N,Gateway,Sorted) ->
-    Cleaned = lists:keydelete(Node,1,Sorted),
-    insert({Node,N,Gateway},Cleaned).
-
-update(Node,N,Gateway,Sorted) ->
-    X = entry(Node,Sorted),
-    case N<X of
-        true -> replace(Node,N,Gateway,Sorted);
-        false -> Sorted end.
-
-
-gateway_entries([]) ->
-    [];
-gateway_entries([Gateway | Rest]) ->
-    [{Gateway,0,Gateway}| gateway_entries(Rest)].
-
-other_entries([],Gateways) -> 
-    [];
-other_entries([X | Rest],Gateways) ->
-    case lists:member(X,Gateways) of
+update(Node, N, Gateway, Sorted) ->
+    case N < entry(Node, Sorted) of
         true ->
-            other_entries(Rest,Gateways);
-        false -> 
-            [{X, inf, unknown}| other_entries(Rest,Gateways)] end.
-    
-update_neighbors([],N,Gateway,Sorted) ->
-    Sorted;
-update_neighbors([Next | Neighbors], N,Gateway,Sorted) ->
-    UpdateSorted = update(Next,N+1,Gateway,Sorted),
-    update_neighbors(Neighbors, N,Gateway,UpdateSorted).
+            replace(Node, N, Gateway, Sorted);
+        false ->
+            Sorted
+    end.
 
-
-iterate([],Map,Table) ->
+iterate([], _Map, Table) ->
     Table;
-iterate([{_,inf,_}| Sorted],Map,Table)->
+iterate([{_Node, inf, _Gateway} | _Rest], _Map, Table) ->
     Table;
-iterate([{Node,N,Gateway}| Sorted],Map,Table) ->
-    Table1 = [{Node,Gateway} | Table],
-    Neighbors = map:reachable(Node,Map),
-    UpdateSorted = update_neighbors(Neighbors,N,Gateway,Sorted),
-    iterate(UpdateSorted,Map,Table1).
+iterate([{Node, N, Gateway} | Rest], Map, Table) ->
+    Reachable = map:reachable(Node, Map),
+    Sorted = lists:foldl(
+        fun(Neighbor, Acc) ->
+            update(Neighbor, N + 1, Gateway, Acc)
+        end,
+        Rest,
+        Reachable),
+    iterate(Sorted, Map, Table ++ [{Node, Gateway}]).
 
+table(Gateways, Map) ->
+    Nodes = lists:usort(Gateways ++ map:all_nodes(Map)),
+    Initial = [init_entry(Node, Gateways) || Node <- Nodes],
+    Sorted = lists:keysort(2, Initial),
+    iterate(Sorted, Map, []).
 
-table(Gateways,Map) ->
-    AllNodes = map:all_nodes(Map),
-    GwList = gateway_entries(Gateways),
-    InitialSorted = GwList ++ other_entries(AllNodes,Gateways),
-    iterate(InitialSorted,Map,[]).
+init_entry(Node, Gateways) ->
+    case lists:member(Node, Gateways) of
+        true ->
+            {Node, 0, Node};
+        false ->
+            {Node, inf, unknown}
+    end.
 
-route(Node,Table) ->
-    case lists:keyfind(Node,1,Table) of
-        {Node, Gateway} -> {ok, Gateway};
-        false -> notfound end.
-
-    
+route(Node, Table) ->
+    case lists:keyfind(Node, 1, Table) of
+        {Node, Gateway} ->
+            {ok, Gateway};
+        false ->
+            notfound
+    end.

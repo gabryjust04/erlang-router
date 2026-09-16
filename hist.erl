@@ -4,13 +4,12 @@
 new(Name) ->
     [{Name, inf}].
 
-update(Node,N,History) ->
-    case lists:keyfind(Node,1,History) of
-        false ->  {new,[{Node,N} | History]};
-        {_, OldN} -> 
-            case N>OldN of
-                false-> old;
-                true -> Updated = lists:keyreplace(Node,1,History,{Node,N}),
-                 {new,Updated}
-                 end
-            end.
+update(Node, N, History) ->
+    case lists:keyfind(Node, 1, History) of
+        {Node, Highest} when N =< Highest ->
+            old;
+        {Node, _Highest} ->
+            {new, lists:keyreplace(Node, 1, History, {Node, N})};
+        false ->
+            {new, [{Node, N} | History]}
+    end.
